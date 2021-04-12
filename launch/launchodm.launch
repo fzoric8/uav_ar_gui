@@ -1,0 +1,5 @@
+<launch>
+<arg name="frequency" value="1"/> 
+<node pkg="probniPack" type="firstui.py" name="drone_odom_subscriber_node" output="screen" args="$(arg frequency)">
+</node>
+</launch>
