@@ -14,34 +14,20 @@ class PrintPosition():
         
         rospy.init_node('drone_odom', anonymous=True)
         self.odom_sub = rospy.Subscriber('/firefly/ground_truth/odometry', Odometry, self.odom_callback)
-        rospy.spin()
         
         self.odom_msg_recv = False
         
         # ROS Image
-        #self.ros_img = ROSImage()
+        self.ros_img = ROSImage()
         
     def odom_callback(self, data):
-        self.first_odom_msg_recv = True
+        self.odom_msg_recv = True
         self.odom=Odometry()
         height=str(data.pose.pose.position.z)
-        pil_img = self.draw_gui(height)
-        self.ros_img = self.convert_pil_to_ros_img(pil_img)
-        
-        print("positionz: ", height)
-        
-    @staticmethod
-    def draw_gui(drone_height):
-        pil_img=PILImage.new("RGBA", (900,900), 'white')
-        font=ImageFont.load_default()
-        draw=ImageDraw.Draw(pil_img)
-        draw.text((0,150), drone_height, (0,0,0), font=font)
-        #pil_img.save("img_with_posz")
-        # Tu je greška, mislim da ne mozete u statickoj klasi pozivati metodu klase 
-        # self.conv_pil_to_rosimg(img) bi bilo dobro pozivanje 
-        # conv_pil_to_rosimg(img)
-        return pil_img
+        pil_img = PrintPosition.draw_gui(height)
+        self.ros_img = PrintPosition.convert_pil_to_ros_img(self, pil_img)
 
+    @staticmethod
     def convert_pil_to_ros_img(self, img):
         img=img.convert('RGB')
         msg = ROSImage()
@@ -56,15 +42,26 @@ class PrintPosition():
 
     def run(self):
         rate = rospy.Rate(self.frequency)
+        print("Entered run")
         while not rospy.is_shutdown():
             rate.sleep()
+            print("running")
             
             # Publish saved msg 
             if self.odom_msg_recv:
                 self.image_pub.publish(self.ros_img)
+
+    @staticmethod
+    def draw_gui(drone_height):
+        pil_img=PILImage.new("RGBA", (900,900), 'white')
+        font=ImageFont.load_default()
+        draw=ImageDraw.Draw(pil_img)
+        draw.text((0,150), drone_height, (0,0,0), font=font)
+        return pil_img
+
 if __name__ == '__main__':
     try:
         p = PrintPosition(sys.argv[1])
+        print("Here")
         p.run()
     except rospy.ROSInterruptException: pass
-        
