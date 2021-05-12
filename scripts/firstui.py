@@ -2,6 +2,7 @@
 import rospy
 import sys
 import numpy as np
+import math
 from nav_msgs.msg import Odometry
 from PIL import Image as PILImage, ImageFont,ImageDraw
 from sensor_msgs.msg import Image as ROSImage
@@ -13,7 +14,7 @@ class PrintPosition():
         #https://answers.ros.org/question/243855/how-do-publishersubscriber-message-queues-work/
         
         rospy.init_node('drone_odom', anonymous=True)
-        self.odom_sub = rospy.Subscriber('/firefly/ground_truth/odometry', Odometry, self.odom_callback)
+        self.odom_sub = rospy.Subscriber('/firefly/ground_truth/odometry', Odometry, self.odom_callback, queue_size=1)
         
         self.odom_msg_recv = False
         
@@ -23,8 +24,15 @@ class PrintPosition():
     def odom_callback(self, data):
         self.odom_msg_recv = True
         self.odom=Odometry()
-        height=str(data.pose.pose.position.z)
-        pil_img = PrintPosition.draw_gui(height)
+        height=round(data.pose.pose.position.z, 3)
+        height=str(height)
+        linvel_x=data.twist.twist.linear.x
+        linvel_y=data.twist.twist.linear.y
+        linvel_z=data.twist.twist.linear.z
+        linear_velocity=math.sqrt(linvel_x*linvel_x + linvel_y*linvel_y + linvel_z*linvel_z)
+        linear_velocity=round(linear_velocity,3)
+        linear_velocity_str=str(linear_velocity)
+        pil_img = PrintPosition.draw_gui(height, linear_velocity_str)
         self.ros_img = PrintPosition.convert_pil_to_ros_img(self, pil_img)
 
     @staticmethod
@@ -40,6 +48,38 @@ class PrintPosition():
         msg.data = np.array(img).tobytes()
         return msg 
 
+    @staticmethod
+    def draw_compass_on_image(pil_img):
+        draw=ImageDraw.Draw(pil_img)
+        draw.ellipse((520, 20, 620, 120), fill = 'white', outline ='black')
+        ellipse_center_x = 570
+        ellipse_center_y = 70
+        ellipse_radius = 50
+        angle_deg=75
+        angle_rad = math.radians(angle_deg)
+        if angle_deg>0 and angle_deg<90:
+            second_point_x = ellipse_radius * math.cos(angle_rad) + ellipse_center_x
+            second_point_y = ellipse_center_y - ellipse_radius * math.sin(angle_rad)
+        elif angle_deg>=90 and angle_deg<=180:
+            angle_deg=angle_deg-90
+            angle_rad=math.radians(angle_deg)
+            second_point_x = ellipse_radius * math.cos(angle_rad) + ellipse_center_x
+            second_point_y = ellipse_radius * math.sin(angle_rad) + ellipse_center_y
+        elif angle_deg>180 and angle_deg<=270:
+            angle_deg=360-90-angle_deg
+            angle_rad=math.radians(angle_deg)
+            second_point_x = ellipse_center_x - ellipse_radius * math.cos(angle_rad)
+            second_point_y = ellipse_radius * math.sin(angle_rad) + ellipse_center_y
+        else:
+            angle_deg=360-angle_deg
+            angle_rad=math.radians(angle_deg)
+            second_point_x = ellipse_center_x - ellipse_radius * math.cos(angle_rad)
+            second_point_y = ellipse_center_y - ellipse_radius * math.sin(angle_rad)
+        draw.line((ellipse_center_x, ellipse_center_y, second_point_x, second_point_y), fill=(255,0,0), width=10)
+        
+
+        return pil_img
+
     def run(self):
         rate = rospy.Rate(self.frequency)
         print("Entered run")
@@ -52,11 +92,15 @@ class PrintPosition():
                 self.image_pub.publish(self.ros_img)
 
     @staticmethod
-    def draw_gui(drone_height):
-        pil_img=PILImage.new("RGBA", (900,900), 'white')
-        font=ImageFont.load_default()
+    def draw_gui(drone_height, linear_velocity):
+        pil_img=PILImage.new("RGBA", (640,480), 'white')
+        font=ImageFont.truetype("/home/developer/arial.ttf", 15, encoding="unic")
         draw=ImageDraw.Draw(pil_img)
-        draw.text((0,150), drone_height, (0,0,0), font=font)
+        draw.text((10,0), "Height:", (0,0,0), font=font)
+        draw.text((20,25), drone_height + " m", (0,0,0), font=font)
+        draw.text((10,200), "Linear velocity:", (0,0,0), font=font)
+        draw.text((20,225), linear_velocity + " m/s", (0,0,0), font=font)
+        pil_img = PrintPosition.draw_compass_on_image(pil_img)
         return pil_img
 
 if __name__ == '__main__':
