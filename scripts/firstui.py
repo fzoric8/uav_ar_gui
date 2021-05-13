@@ -33,11 +33,17 @@ class PrintPosition():
         linear_velocity=math.sqrt(linvel_x*linvel_x + linvel_y*linvel_y + linvel_z*linvel_z)
         linear_velocity=round(linear_velocity,3)
         linear_velocity_str=str(linear_velocity)
-        yaw=PrintPosition.get_rotation(self.odom)
-        print('JAW' + str(yaw))
+        yaw=PrintPosition.get_rotation(data)
+        print('JAW' + str(yaw))        
+        
+        start_t = rospy.Time.now().to_sec()
         pil_img = PrintPosition.draw_gui(height, linear_velocity_str, 40)
+        duration = rospy.Time.now().to_sec() - start_t; debug_duration = True; 
+        if debug_duration:
+            print("Draw GUI on image lasts: {}".format(duration))
         self.ros_img = PrintPosition.convert_pil_to_ros_img(self, pil_img)
-
+        
+            
     @staticmethod
     def get_rotation(msg):
         orientation_q = msg.pose.pose.orientation
@@ -61,6 +67,9 @@ class PrintPosition():
 
     @staticmethod
     def draw_compass_on_image(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg, font):
+        """
+        Add docstring 
+        """
         draw=ImageDraw.Draw(pil_img)
         draw.ellipse((ellipse_center_x-50, 20, 620, 120), fill = (211, 211, 211), outline ='black',)
         draw.text((ellipse_center_x-3, ellipse_center_y-ellipse_radius-20), "N", (0,0,0), font=font)
