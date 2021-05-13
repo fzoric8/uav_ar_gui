@@ -34,19 +34,14 @@ class PrintPosition():
         linear_velocity=round(linear_velocity,3)
         linear_velocity_str=str(linear_velocity)
         yaw=PrintPosition.get_rotation(data)
-<<<<<<< Updated upstream
         print('JAW' + str(yaw))        
-        
         start_t = rospy.Time.now().to_sec()
         pil_img = PrintPosition.draw_gui(height, linear_velocity_str, 40)
         duration = rospy.Time.now().to_sec() - start_t; debug_duration = True; 
         if debug_duration:
             print("Draw GUI on image lasts: {}".format(duration))
-=======
-        print('JAW: ' + str(yaw))
         yaw=math.degrees(yaw)
         pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw)
->>>>>>> Stashed changes
         self.ros_img = PrintPosition.convert_pil_to_ros_img(self, pil_img)
         
             
