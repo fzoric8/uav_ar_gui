@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 import rospy
 import sys
+from rospy.numpy_msg import numpy_msg
 import numpy as np
 import math
 from nav_msgs.msg import Odometry
@@ -16,12 +17,25 @@ class PrintPosition():
         
         rospy.init_node('drone_odom', anonymous=True)
         self.odom_sub = rospy.Subscriber('/firefly/ground_truth/odometry', Odometry, self.odom_callback, queue_size=1)
+
+        self.cam_sub = rospy.Subscriber('/firefly/vi_sensor/right/image_raw', numpy_msg(ROSImage), self.cam_callback, queue_size=1)
         
         self.odom_msg_recv = False
         
         # ROS Image
         self.ros_img = ROSImage()
+        self.cam_img = None
+    
+    def cam_callback(self, image):
+        self.cam_img = np.frombuffer(image.data, dtype=np.uint8).reshape(image.height, image.width)
+        self.cam_img = np.stack((self.cam_img,)*3, axis=-1)
+        print(type(image.data))
+        print(type(self.cam_img))
+        print(self.cam_img.shape)
+
         
+
+
     def odom_callback(self, data):
         self.odom_msg_recv = True
         self.odom=Odometry()
@@ -35,16 +49,21 @@ class PrintPosition():
         linear_velocity_str=str(linear_velocity)
         yaw=PrintPosition.get_rotation(data)
         print('JAW' + str(yaw))        
+        yaw=math.degrees(yaw)
+        if type(self.cam_img) is np.ndarray:
+            pil_img = PILImage.fromarray(self.cam_img.astype('uint8'), 'RGB')   
+        else:
+            pil_img=PILImage.new("RGBA", (640,480), 'white')
         start_t = rospy.Time.now().to_sec()
-        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, 40)
+        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw, pil_img)
         duration = rospy.Time.now().to_sec() - start_t; debug_duration = True; 
         if debug_duration:
             print("Draw GUI on image lasts: {}".format(duration))
-        yaw=math.degrees(yaw)
-        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw)
         self.ros_img = PrintPosition.convert_pil_to_ros_img(self, pil_img)
         
-            
+    
+#PIL_image = Image.fromarray(numpy_image.astype('uint8'), 'RGB')
+    
     @staticmethod
     def get_rotation(msg):
         roll = pitch = yaw = 0.0
@@ -121,12 +140,12 @@ class PrintPosition():
                 self.image_pub.publish(self.ros_img)
 
     @staticmethod
-    def draw_gui(drone_height, linear_velocity, yaw):
+    def draw_gui(drone_height, linear_velocity, yaw, pil_img):
         ellipse_center_x = 570
         ellipse_center_y = 70
         ellipse_radius = 50
         angle_deg=yaw
-        pil_img=PILImage.new("RGBA", (640,480), 'white')
+        
         font=ImageFont.truetype("/home/developer/arial.ttf", 15, encoding="unic")
         draw=ImageDraw.Draw(pil_img)
         draw.text((10,0), "Height:", (0,0,0), font=font)
