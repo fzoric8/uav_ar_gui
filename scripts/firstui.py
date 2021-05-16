@@ -62,14 +62,16 @@ class PrintPosition():
         linear_velocity = math.sqrt(linvel_x*linvel_x + linvel_y*linvel_y + linvel_z*linvel_z)
         linear_velocity = round(linear_velocity, 3)
         linear_velocity_str = str(linear_velocity)
-        yaw = PrintPosition.get_rotation(data)
+        roll,pitch,yaw = PrintPosition.get_rotation(data)
+        roll = math.degrees(roll)
         yaw = math.degrees(yaw)
+        pitch = math.degrees(pitch)
         if type(self.cam_img) is np.ndarray:
             pil_img = PILImage.fromarray(self.cam_img.astype('uint8'), 'RGB')
         else:
             pil_img = PILImage.new("RGBA", (640, 480), 'white')
         start_t = rospy.Time.now().to_sec()
-        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw, pil_img)
+        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw, pil_img, roll, pitch)
         duration = rospy.Time.now().to_sec() - start_t
         debug_duration = True
         if debug_duration:
@@ -91,7 +93,7 @@ class PrintPosition():
         orientation_q = msg.pose.pose.orientation
         orientation_list = [orientation_q.x,orientation_q.y, orientation_q.z, orientation_q.w]
         (roll, pitch, yaw) = euler_from_quaternion(orientation_list)
-        return yaw
+        return (roll, pitch, yaw)
 
 
     @staticmethod
@@ -132,12 +134,12 @@ class PrintPosition():
             PIL.Image.Image: Pillow image with a compass on it
         """
         draw = ImageDraw.Draw(pil_img)
-        draw.ellipse((ellipse_center_x-50, 20, 620, 120), fill=(211, 211, 211), outline='black',)
-        draw.text((ellipse_center_x-3, ellipse_center_y - ellipse_radius-20), "N", (0, 0, 0), font=font)
-        draw.text((ellipse_center_x + ellipse_radius + 6, ellipse_center_y-3), "E", (0, 0, 0), font=font)
-        draw.text((ellipse_center_x-3, ellipse_center_y + ellipse_radius+5), "S", (0, 0, 0), font=font)
-        draw.text((ellipse_center_x - ellipse_radius - 20, ellipse_center_y-3), "W", (0, 0, 0), font=font)
-        draw.ellipse((ellipse_center_x-4, ellipse_center_y-4, ellipse_center_x+4, ellipse_center_y+4), fill='red', outline='red')
+        draw.ellipse((ellipse_center_x, 20, 670, 120), fill=(211, 211, 211), outline='black',)
+        draw.text((ellipse_center_x-3+50, ellipse_center_y - ellipse_radius-20), "N", (0, 0, 0), font=font)
+        draw.text((ellipse_center_x + ellipse_radius + 56, ellipse_center_y-3), "E", (0, 0, 0), font=font)
+        draw.text((ellipse_center_x-3+50, ellipse_center_y + ellipse_radius+5), "S", (0, 0, 0), font=font)
+        draw.text((ellipse_center_x - ellipse_radius - 20+50, ellipse_center_y-3), "W", (0, 0, 0), font=font)
+        draw.ellipse((ellipse_center_x-4+50, ellipse_center_y-4, ellipse_center_x+54, ellipse_center_y+4), fill='red', outline='red')
 
         if angle_deg < 0:
             angle_deg = 360+angle_deg
@@ -167,7 +169,56 @@ class PrintPosition():
             second_point_x = ellipse_center_x + ellipse_radius * math.cos(angle_rad)
             second_point_y = ellipse_center_y - ellipse_radius * math.sin(angle_rad)
 
-        draw.line((ellipse_center_x, ellipse_center_y, second_point_x,second_point_y), fill=(255, 0, 0), width=3)
+        draw.line((ellipse_center_x+50, ellipse_center_y, second_point_x+50,second_point_y), fill=(255, 0, 0), width=3)
+
+        return pil_img
+    
+
+    @staticmethod
+    def draw_roll_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_roll, font):
+        """Function for drawing roll attitude indicator on a pillow image
+
+        Args:
+            pil_img (PIL.Image.Image): Pillow image used for drawing GUI
+            ellipse_center_x (int): X coordinate for positioning of the roll artificial horizon
+            ellipse_center_y (int): Y coordinate for positioning of the roll artificial horizon
+            ellipse_radius (int): Radius of the attitude indicator
+            angle_deg_roll (float): Roll rotation of a drone in degrees
+            font (PIL.ImageFont.FreeTypeFont): Font style used to format text on pillow image 
+
+        Returns:
+            PIL.Image.Image: Pillow image with a roll_attitude_indicator on it
+        """
+        draw = ImageDraw.Draw(pil_img)
+        draw.ellipse((ellipse_center_x, 200, 670, 300), fill=(134, 197, 218))
+        draw.text((ellipse_center_x-12+50, ellipse_center_y + 110), "Roll", (0,0,0), font=font)
+        draw.chord((ellipse_center_x, 200, 670, 300), angle_deg_roll, angle_deg_roll+180, fill=(0,190,0))
+        draw.line((ellipse_center_x, 250, ellipse_center_x+100, 250), fill=(0, 0, 0), width=1)
+        return pil_img
+
+
+    @staticmethod
+    def draw_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_pitch, font):
+        """Function for drawing pitch attitude indicator on a pillow image
+
+        Args:
+            pil_img (PIL.Image.Image): Pillow image used for drawing GUI
+            ellipse_center_x (int): X coordinate for positioning of the roll artificial horizon
+            ellipse_center_y (int): Y coordinate for positioning of the roll artificial horizon
+            ellipse_radius (int): Radius of the attitude indicator
+            angle_deg_roll (float): Roll rotation of a drone in degrees
+            font (PIL.ImageFont.FreeTypeFont): Font style used to format text on pillow image 
+
+        Returns:
+            PIL.Image.Image: Pillow image with a roll_attitude_indicator on it
+        """
+        draw = ImageDraw.Draw(pil_img)
+        draw.ellipse((ellipse_center_x, 350, 670, 450), fill=(134, 197, 218))
+        draw.text((ellipse_center_x-16+50, ellipse_center_y + 260), "Pitch", (0,0,0), font=font)
+        if angle_deg_pitch>=0:
+            draw.chord((ellipse_center_x, 350, 670, 450), -angle_deg_pitch, angle_deg_pitch+180, fill=(0,190,0))
+        else:
+            draw.chord((ellipse_center_x, 350, 670, 450), -angle_deg_pitch, angle_deg_pitch+180, fill=(0,190,0))
 
         return pil_img
 
@@ -187,7 +238,7 @@ class PrintPosition():
 
 
     @staticmethod
-    def draw_gui(drone_height, linear_velocity, yaw, pil_img):
+    def draw_gui(drone_height, linear_velocity, yaw, pil_img, roll, pitch):
         """Function for drawing GUI on a pillow image
 
         Args:
@@ -202,7 +253,9 @@ class PrintPosition():
         ellipse_center_x = 570
         ellipse_center_y = 70
         ellipse_radius = 50
-        angle_deg = yaw
+        angle_deg_roll = roll
+        angle_deg_yaw = yaw
+        angle_deg_pitch = pitch
 
         font = ImageFont.truetype("/home/developer/arial.ttf", 15, encoding="unic")
         draw = ImageDraw.Draw(pil_img)
@@ -210,8 +263,9 @@ class PrintPosition():
         draw.text((20, 25), drone_height + " m", (0, 0, 0), font=font)
         draw.text((10, 200), "Linear velocity:", (0, 0, 0), font=font)
         draw.text((20, 225), linear_velocity + " m/s", (0, 0, 0), font=font)
-        pil_img = PrintPosition.draw_compass_on_image(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg, font)
-
+        pil_img = PrintPosition.draw_compass_on_image(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_yaw, font)
+        pil_img = PrintPosition.draw_roll_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_roll, font)
+        pil_img = PrintPosition.draw_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_pitch, font)
         return pil_img
 
 
