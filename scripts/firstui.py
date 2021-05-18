@@ -29,10 +29,11 @@ class PrintPosition():
         self.cam_sub = rospy.Subscriber('/firefly/vi_sensor/right/image_raw', numpy_msg(ROSImage), self.cam_callback, queue_size=1)
 
         self.odom_msg_recv = False
-
+        self.img_recv = False
         # ROS Image
         self.ros_img = ROSImage()
         self.cam_img = None
+        self.pimg=None
 
 
     def cam_callback(self, image):
@@ -41,6 +42,7 @@ class PrintPosition():
         Args:
             image (rospy.numpy_msg.Numpy_sensor_msgs__Image): Image from a drone sensor
         """
+        self.img_recv = True
         self.cam_img = np.frombuffer(image.data, dtype=np.uint8).reshape(
             image.height, image.width)
         self.cam_img = np.stack((self.cam_img,)*3, axis=-1)
@@ -66,10 +68,16 @@ class PrintPosition():
         roll = math.degrees(roll)
         yaw = math.degrees(yaw)
         pitch = math.degrees(pitch)
-        if type(self.cam_img) is np.ndarray:
-            pil_img = PILImage.fromarray(self.cam_img.astype('uint8'), 'RGB')
-        else:
-            pil_img = PILImage.new("RGBA", (640, 480), 'white')
+        try:
+            if type(self.cam_img) is np.ndarray:
+                if self.img_recv:
+                    pil_img = PILImage.fromarray(self.cam_img.astype('uint8'), 'RGB')
+                    self.pimg = pil_img
+            else:
+                pil_img = PILImage.new("RGBA", (640, 480), 'white')
+        except Exception as e:
+            if self.img_recv and self.pimg: 
+                pil_img = self.pimg
         start_t = rospy.Time.now().to_sec()
         pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw, pil_img, roll, pitch)
         duration = rospy.Time.now().to_sec() - start_t
@@ -198,19 +206,41 @@ class PrintPosition():
 
 
     @staticmethod
-    def draw_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_pitch, font):
-        """Function for drawing pitch attitude indicator on a pillow image
-
+    def draw_roll_and_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_roll, angle_deg_pitch, font):
+        """Function for drawing roll attitude indicator on a pillow image
         Args:
             pil_img (PIL.Image.Image): Pillow image used for drawing GUI
             ellipse_center_x (int): X coordinate for positioning of the roll artificial horizon
             ellipse_center_y (int): Y coordinate for positioning of the roll artificial horizon
             ellipse_radius (int): Radius of the attitude indicator
             angle_deg_roll (float): Roll rotation of a drone in degrees
+            angle_deg_pitch (float): Pitch rotation of a drone in degrees
+            font (PIL.ImageFont.FreeTypeFont): Font style used to format text on pillow image 
+        Returns:
+            PIL.Image.Image: Pillow image with a roll_and_pitch_attitude_indicator on it
+        """
+        draw = ImageDraw.Draw(pil_img)
+        draw.ellipse((ellipse_center_x, 200, 670, 300), fill=(134, 197, 218))
+        draw.text((ellipse_center_x-12+50, ellipse_center_y + 110), "Roll", (0,0,0), font=font)
+        draw.chord((ellipse_center_x, 200, 670, 300), angle_deg_roll - angle_deg_pitch, angle_deg_roll + angle_deg_pitch + 180, fill=(0,190,0))
+        draw.line((ellipse_center_x, 250, ellipse_center_x+100, 250), fill=(0, 0, 0), width=1)
+        return pil_img
+
+
+    @staticmethod
+    def draw_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_pitch, font):
+        """Function for drawing pitch attitude indicator on a pillow image
+
+        Args:
+            pil_img (PIL.Image.Image): Pillow image used for drawing GUI
+            ellipse_center_x (int): X coordinate for positioning of the pitch artificial horizon
+            ellipse_center_y (int): Y coordinate for positioning of the pitch artificial horizon
+            ellipse_radius (int): Radius of the attitude indicator
+            angle_deg_pitch (float): Pitch rotation of a drone in degrees
             font (PIL.ImageFont.FreeTypeFont): Font style used to format text on pillow image 
 
         Returns:
-            PIL.Image.Image: Pillow image with a roll_attitude_indicator on it
+            PIL.Image.Image: Pillow image with a pitch_attitude_indicator on it
         """
         draw = ImageDraw.Draw(pil_img)
         draw.ellipse((ellipse_center_x, 350, 670, 450), fill=(134, 197, 218))
@@ -264,7 +294,7 @@ class PrintPosition():
         draw.text((10, 200), "Linear velocity:", (0, 0, 0), font=font)
         draw.text((20, 225), linear_velocity + " m/s", (0, 0, 0), font=font)
         pil_img = PrintPosition.draw_compass_on_image(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_yaw, font)
-        pil_img = PrintPosition.draw_roll_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_roll, font)
+        pil_img = PrintPosition.draw_roll_and_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_roll, angle_deg_pitch, font)
         pil_img = PrintPosition.draw_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_pitch, font)
         return pil_img
 
