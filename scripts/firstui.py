@@ -82,8 +82,8 @@ class PrintPosition():
         pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw, pil_img, roll, pitch)
         duration = rospy.Time.now().to_sec() - start_t
         debug_duration = True
-        if debug_duration:
-            print("Draw GUI on image lasts: {}".format(duration))
+        #if debug_duration:
+            #print("Draw GUI on image lasts: {}".format(duration))
         self.ros_img = PrintPosition.convert_pil_to_ros_img(self, pil_img)
 
 
@@ -156,7 +156,7 @@ class PrintPosition():
         if angle_deg >= 0 and angle_deg < 90:
             angle_deg = 90-angle_deg
             angle_rad = math.radians(angle_deg)
-            second_point_x = (ellipse_radius * math.cos(angle_rad)) + ellipse_center_x
+            second_point_x = ellipse_center_x - (ellipse_radius * math.cos(angle_rad)) 
             second_point_y = ellipse_center_y - ellipse_radius * math.sin(angle_rad)
         elif angle_deg >= 90 and angle_deg <= 180:
             angle_deg = angle_deg-90
@@ -164,18 +164,18 @@ class PrintPosition():
             if angle_deg == 0:
                 second_point_x = ellipse_center_x + ellipse_radius
             else:
-                second_point_x = ellipse_radius * math.cos(angle_rad) + ellipse_center_x
+                second_point_x = ellipse_center_x - ellipse_radius * math.cos(angle_rad)
             second_point_y = ellipse_radius * math.sin(angle_rad) + ellipse_center_y
         elif angle_deg > 180 and angle_deg <= 270:
-            angle_deg = 90 - (angle_deg-180)
-            angle_rad = math.radians(angle_deg)
-            second_point_x = ellipse_center_x - ellipse_radius * math.cos(angle_rad)
-            second_point_y = ellipse_radius *  math.sin(angle_rad) + ellipse_center_y
-        else:
-            angle_deg = 360-angle_deg+90
+            angle_deg = (angle_deg-180)-90
             angle_rad = math.radians(angle_deg)
             second_point_x = ellipse_center_x + ellipse_radius * math.cos(angle_rad)
-            second_point_y = ellipse_center_y - ellipse_radius * math.sin(angle_rad)
+            second_point_y = ellipse_center_y - ellipse_radius *  math.sin(angle_rad)
+        else:
+            angle_deg = 360-angle_deg-90
+            angle_rad = math.radians(angle_deg)
+            second_point_x = ellipse_center_x + ellipse_radius * math.cos(angle_rad)
+            second_point_y = ellipse_center_y + ellipse_radius * math.sin(angle_rad)
 
         draw.line((ellipse_center_x+50, ellipse_center_y, second_point_x+50,second_point_y), fill=(255, 0, 0), width=3)
 
