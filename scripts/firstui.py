@@ -287,7 +287,7 @@ class PrintPosition():
         angle_deg_yaw = yaw
         angle_deg_pitch = pitch
 
-        font = ImageFont.truetype("/home/developer/arial.ttf", 15, encoding="unic")
+        font = ImageFont.truetype("/home/developer/catkin_ws/src/probniPack/include/probniPack/fonts/roboto.regular.ttf", 15, encoding="unic")
         draw = ImageDraw.Draw(pil_img)
         draw.text((10, 0), "Height:", (0, 0, 0), font=font)
         draw.text((20, 25), drone_height + " m", (0, 0, 0), font=font)
