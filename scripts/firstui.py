@@ -181,7 +181,7 @@ class PrintPosition():
             second_point_x = ellipse_center_x + ellipse_radius * math.cos(angle_rad)
             second_point_y = ellipse_center_y + ellipse_radius * math.sin(angle_rad)
 
-        draw.line((ellipse_center_x+50, ellipse_center_y + 50, second_point_x, second_point_y), fill=(255, 0, 0), width=3)
+        draw.line((ellipse_center_x+50, ellipse_center_y + 50, second_point_x + 50, second_point_y), fill=(255, 0, 0), width=3)
 
         return pil_img
     
