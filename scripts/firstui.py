@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 import rospy
 import sys
+import yaml
 from rospy.numpy_msg import numpy_msg
 import numpy as np
 import math
@@ -22,11 +23,14 @@ class PrintPosition():
         self.frequency = int(frequency)
         rospy.init_node('drone_odom', anonymous=True)
 
-        self.image_pub = rospy.Publisher('/uav/gui', ROSImage, queue_size=1)
+        with open("/home/developer/catkin_ws/src/probniPack/config/config.yml", "r") as ymlfile:
+            cfg = yaml.load(ymlfile)
 
-        self.odom_sub = rospy.Subscriber('/firefly/ground_truth/odometry', Odometry, self.odom_callback, queue_size=1)
+        self.image_pub = rospy.Publisher(cfg["topics"]["ui_pub"], ROSImage, queue_size=1)
 
-        self.cam_sub = rospy.Subscriber('/firefly/vi_sensor/right/image_raw', numpy_msg(ROSImage), self.cam_callback, queue_size=1)
+        self.odom_sub = rospy.Subscriber(cfg["topics"]["odm_sub"], Odometry, self.odom_callback, queue_size=1)
+
+        self.cam_sub = rospy.Subscriber(cfg["topics"]["cam_sub"], numpy_msg(ROSImage), self.cam_callback, queue_size=1)
 
         self.odom_msg_recv = False
         self.img_recv = False
@@ -82,8 +86,8 @@ class PrintPosition():
         pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw, pil_img, roll, pitch)
         duration = rospy.Time.now().to_sec() - start_t
         debug_duration = True
-        #if debug_duration:
-            #print("Draw GUI on image lasts: {}".format(duration))
+        if debug_duration:
+            print("Draw GUI on image lasts: {}".format(duration))
         self.ros_img = PrintPosition.convert_pil_to_ros_img(self, pil_img)
 
 
