@@ -83,7 +83,7 @@ class PrintPosition():
             if self.img_recv and self.pimg: 
                 pil_img = self.pimg
         start_t = rospy.Time.now().to_sec()
-        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, yaw, pil_img, roll, pitch)
+        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, roll, pitch, yaw, pil_img)
         duration = rospy.Time.now().to_sec() - start_t
         debug_duration = True
         if debug_duration:
@@ -136,8 +136,8 @@ class PrintPosition():
 
         Args:
             pil_img (PIL.Image.Image): Pillow image used for drawing GUI
-            ellipse_center_x (int): X coordinate for positioning of the compass
-            ellipse_center_y (int): Y coordiante for positioning of the compass
+            ellipse_center_x (int): X coordinate for positioning of the compass (top left corner of an imaginary square)
+            ellipse_center_y (int): Y coordiante for positioning of the compass (top left corner of an imaginary square)
             ellipse_radius (int): Radius of the compass
             angle_deg (float): Yaw rotation of a drone in degrees
             font (PIL.ImageFont.FreeTypeFont): Font style used to format text on pillow image 
@@ -146,12 +146,12 @@ class PrintPosition():
             PIL.Image.Image: Pillow image with a compass on it
         """
         draw = ImageDraw.Draw(pil_img)
-        draw.ellipse((ellipse_center_x, 20, 670, 120), fill=(211, 211, 211), outline='black',)
-        draw.text((ellipse_center_x-3+50, ellipse_center_y - ellipse_radius-20), "N", (0, 0, 0), font=font)
-        draw.text((ellipse_center_x + ellipse_radius + 56, ellipse_center_y-3), "E", (0, 0, 0), font=font)
-        draw.text((ellipse_center_x-3+50, ellipse_center_y + ellipse_radius+5), "S", (0, 0, 0), font=font)
-        draw.text((ellipse_center_x - ellipse_radius - 20+50, ellipse_center_y-3), "W", (0, 0, 0), font=font)
-        draw.ellipse((ellipse_center_x-4+50, ellipse_center_y-4, ellipse_center_x+54, ellipse_center_y+4), fill='red', outline='red')
+        draw.ellipse((ellipse_center_x, ellipse_center_y, ellipse_center_x + 100, ellipse_center_y + 100), fill=(211, 211, 211), outline='black',)
+        draw.text((ellipse_center_x + 47, ellipse_center_y - 20), "N", (0, 0, 0), font=font)
+        draw.text((ellipse_center_x + ellipse_radius + 56, ellipse_center_y + ellipse_radius), "E", (0, 0, 0), font=font)
+        draw.text((ellipse_center_x + 47, ellipse_center_y + ellipse_radius + ellipse_radius + 5), "S", (0, 0, 0), font=font)
+        draw.text((ellipse_center_x - 20, ellipse_center_y + ellipse_radius), "W", (0, 0, 0), font=font)
+        draw.ellipse((ellipse_center_x + 46, ellipse_center_y + 46, ellipse_center_x+54, ellipse_center_y + 54), fill='red', outline='red')
 
         if angle_deg < 0:
             angle_deg = 360+angle_deg
@@ -181,7 +181,7 @@ class PrintPosition():
             second_point_x = ellipse_center_x + ellipse_radius * math.cos(angle_rad)
             second_point_y = ellipse_center_y + ellipse_radius * math.sin(angle_rad)
 
-        draw.line((ellipse_center_x+50, ellipse_center_y, second_point_x+50,second_point_y), fill=(255, 0, 0), width=3)
+        draw.line((ellipse_center_x+50, ellipse_center_y + 50, second_point_x, second_point_y), fill=(255, 0, 0), width=3)
 
         return pil_img
     
@@ -224,10 +224,10 @@ class PrintPosition():
             PIL.Image.Image: Pillow image with a roll_and_pitch_attitude_indicator on it
         """
         draw = ImageDraw.Draw(pil_img)
-        draw.ellipse((ellipse_center_x, 200, 670, 300), fill=(134, 197, 218))
-        draw.text((ellipse_center_x-12+50, ellipse_center_y + 110), "Roll", (0,0,0), font=font)
-        draw.chord((ellipse_center_x, 200, 670, 300), angle_deg_roll - angle_deg_pitch, angle_deg_roll + angle_deg_pitch + 180, fill=(0,190,0))
-        draw.line((ellipse_center_x, 250, ellipse_center_x+100, 250), fill=(0, 0, 0), width=1)
+        draw.ellipse((ellipse_center_x, ellipse_center_y, ellipse_center_x + 100, ellipse_center_y + 100), fill=(134, 197, 218))
+        draw.text((ellipse_center_x - 5, ellipse_center_y - 18), "Artificial horizon", (0,0,0), font=font)
+        draw.chord((ellipse_center_x, ellipse_center_y, ellipse_center_x + 100, ellipse_center_y + 100), angle_deg_roll - angle_deg_pitch, angle_deg_roll + angle_deg_pitch + 180, fill=(0,190,0))
+        draw.line((ellipse_center_x, ellipse_center_y + 50, ellipse_center_x + 100, ellipse_center_y + 50), fill=(0, 0, 0), width=1)
         return pil_img
 
 
@@ -272,34 +272,46 @@ class PrintPosition():
 
 
     @staticmethod
-    def draw_gui(drone_height, linear_velocity, yaw, pil_img, roll, pitch):
+    def draw_gui(drone_height, linear_velocity, roll, pitch, yaw, pil_img):
         """Function for drawing GUI on a pillow image
 
         Args:
             drone_height (str): String representation of a drone height
             linear_velocity (str): String representation of a linear_velocity of a drone
+            roll (float): Rotation of a drone in roll direction
+            pitch (float): Rotation of a drone in pitch direction
             yaw (float): Rotation of a drone in yaw direction 
             pil_img (PIL.Image.Image): Pillow image for gui representation
 
         Returns:
             PIL.Image.Image: Pillow image that represents GUI
         """
-        ellipse_center_x = 570
-        ellipse_center_y = 70
-        ellipse_radius = 50
+        with open("/home/developer/catkin_ws/src/probniPack/config/finalgui.yml", "r") as ymlfile:
+            cfg = yaml.load(ymlfile)
+
+        comp_ellipse_center_x = cfg["compass"]["px"]
+        comp_ellipse_center_y = cfg["compass"]["py"]
+        comp_ellipse_radius = cfg["compass"]["rad"]
+        ah_ellipse_center_x = cfg["artificial_horizon"]["px"]
+        ah_ellipse_center_y = cfg["artificial_horizon"]["py"]
+        height_px = cfg["height"]["px"]
+        height_py = cfg["height"]["py"]
+        linear_velocity_px = cfg["linear_velocity"]["px"]
+        linear_velocity_py = cfg["linear_velocity"]["py"]
         angle_deg_roll = roll
         angle_deg_yaw = yaw
         angle_deg_pitch = pitch
 
         font = ImageFont.truetype("/home/developer/catkin_ws/src/probniPack/include/probniPack/fonts/roboto.regular.ttf", 15, encoding="unic")
         draw = ImageDraw.Draw(pil_img)
-        draw.text((10, 0), "Height:", (0, 0, 0), font=font)
-        draw.text((20, 25), drone_height + " m", (0, 0, 0), font=font)
-        draw.text((10, 200), "Linear velocity:", (0, 0, 0), font=font)
-        draw.text((20, 225), linear_velocity + " m/s", (0, 0, 0), font=font)
-        pil_img = PrintPosition.draw_compass_on_image(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_yaw, font)
-        pil_img = PrintPosition.draw_roll_and_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_roll, angle_deg_pitch, font)
-        pil_img = PrintPosition.draw_pitch_attitude_indicator(pil_img, ellipse_center_x, ellipse_center_y, ellipse_radius, angle_deg_pitch, font)
+        draw.rectangle((height_px - 3, height_py - 2, height_px + 75, height_py + 30), fill = (177, 177, 177), outline = None, width = 1)
+        draw.rectangle((linear_velocity_px - 3, linear_velocity_py - 2, linear_velocity_px + 130, linear_velocity_py + 30), fill = (177, 177, 177), outline = None, width = 1)
+        draw.text((height_px, height_py), "HEIGHT:", (0, 0, 0), font=font)
+        draw.text((height_px + 20, height_py + 15), drone_height + " m", (0, 0, 0), font=font)
+        draw.text((linear_velocity_px, linear_velocity_py), "LINEAR VELOCITY:", (0, 0, 0), font=font)
+        draw.text((linear_velocity_px + 20, linear_velocity_py + 15), linear_velocity + " m/s", (0, 0, 0), font=font)
+        pil_img = PrintPosition.draw_compass_on_image(pil_img, comp_ellipse_center_x, comp_ellipse_center_y, comp_ellipse_radius, angle_deg_yaw, font)
+        pil_img = PrintPosition.draw_roll_and_pitch_attitude_indicator(pil_img, ah_ellipse_center_x, ah_ellipse_center_y, comp_ellipse_radius, angle_deg_roll, angle_deg_pitch, font)
         return pil_img
 
 
