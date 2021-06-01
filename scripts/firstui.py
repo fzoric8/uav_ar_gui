@@ -151,7 +151,7 @@ class PrintPosition():
         draw.text((ellipse_center_x + ellipse_radius + 56, ellipse_center_y + ellipse_radius), "E", (0, 0, 0), font=font)
         draw.text((ellipse_center_x + 47, ellipse_center_y + ellipse_radius + ellipse_radius + 5), "S", (0, 0, 0), font=font)
         draw.text((ellipse_center_x - 20, ellipse_center_y + ellipse_radius), "W", (0, 0, 0), font=font)
-        draw.ellipse((ellipse_center_x + 46, ellipse_center_y + 46, ellipse_center_x+54, ellipse_center_y + 54), fill='red', outline='red')
+        
 
         if angle_deg < 0:
             angle_deg = 360+angle_deg
@@ -182,7 +182,7 @@ class PrintPosition():
             second_point_y = ellipse_center_y + ellipse_radius - ellipse_radius * math.sin(angle_rad)
 
         draw.line((ellipse_center_x + ellipse_radius, ellipse_center_y + ellipse_radius, second_point_x, second_point_y), fill=(255, 0, 0), width=3)
-
+        draw.ellipse((ellipse_center_x + 42, ellipse_center_y + 42, ellipse_center_x+58, ellipse_center_y + 58), fill=(169, 169, 169), outline = None)
         return pil_img
     
 
