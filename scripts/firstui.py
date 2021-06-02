@@ -146,7 +146,7 @@ class PrintPosition():
             PIL.Image.Image: Pillow image with a compass on it
         """
         draw = ImageDraw.Draw(pil_img)
-        draw.ellipse((ellipse_center_x, ellipse_center_y, ellipse_center_x + 100, ellipse_center_y + 100), fill=(211, 211, 211), outline='black',)
+        draw.ellipse((ellipse_center_x, ellipse_center_y, ellipse_center_x + 100, ellipse_center_y + 100), fill=(211, 211, 211), outline='black')
         draw.text((ellipse_center_x + 47, ellipse_center_y - 20), "N", (0, 0, 0), font=font)
         draw.text((ellipse_center_x + ellipse_radius + 56, ellipse_center_y + ellipse_radius), "E", (0, 0, 0), font=font)
         draw.text((ellipse_center_x + 47, ellipse_center_y + ellipse_radius + ellipse_radius + 5), "S", (0, 0, 0), font=font)
