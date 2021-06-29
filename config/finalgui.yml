@@ -3,7 +3,7 @@ compass:
     py: 20
     rad: 50
 artificial_horizon:
-    px: 620
+    px: 500
     py: 20
 height:
     px: 30

@@ -1,5 +1,20 @@
 <launch>
 <arg name="frequency" value="40"/> 
-<node pkg="probniPack" type="firstui.py" name="drone_odom_subscriber_node" output="screen" args="$(arg frequency)">
-</node>
+<arg name="use_mmuav_simulation" value="true"/>
+<arg name="config_name" value="mmuav_config.yml"/>
+
+<group if="$(arg use_mmuav_simulation)">
+
+    <include file="$(find mmuav_gazebo)/launch/uav_attitude_position.launch">
+    		<arg name="manipulator_type" value="none" />
+    		<arg name="manipulator_tool" value="none" />
+    		<arg name="z" value="1.0"/>
+
+  	</include>    
+
+</group>
+
+<node pkg="probniPack" type="firstui.py" name="drone_odom_subscriber_node" output="screen" args="$(arg frequency) $(arg config_name)"></node>
+
+
 </launch>

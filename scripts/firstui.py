@@ -14,7 +14,7 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 class PrintPosition():
     """GUI for drone simulation
     """
-    def __init__(self, frequency):
+    def __init__(self, frequency, config_name):
         """Constructor of PrintPosition class
 
         Args:
@@ -23,7 +23,7 @@ class PrintPosition():
         self.frequency = int(frequency)
         rospy.init_node('drone_odom', anonymous=True)
 
-        with open("/home/developer/catkin_ws/src/probniPack/config/config.yml", "r") as ymlfile:
+        with open("/home/developer/catkin_ws/src/probniPack/config/{}".format(config_name), "r") as ymlfile:
             cfg = yaml.load(ymlfile)
 
         self.image_pub = rospy.Publisher(cfg["topics"]["ui_pub"], ROSImage, queue_size=1)
@@ -47,9 +47,18 @@ class PrintPosition():
             image (rospy.numpy_msg.Numpy_sensor_msgs__Image): Image from a drone sensor
         """
         self.img_recv = True
-        self.cam_img = np.frombuffer(image.data, dtype=np.uint8).reshape(
-            image.height, image.width)
-        self.cam_img = np.stack((self.cam_img,)*3, axis=-1)
+
+        if (image.encoding == "rgb8"):
+            self.cam_img = np.frombuffer(image.data, dtype=np.uint8).reshape(
+            image.height, image.width, 3)
+          
+        else:
+            
+            self.cam_img = np.frombuffer(image.data, dtype=np.uint8).reshape(
+                image.height, image.width)
+        
+        
+            self.cam_img = np.stack((self.cam_img,)*3, axis=-1)
 
 
     def odom_callback(self, data):
@@ -264,9 +273,9 @@ class PrintPosition():
         print("Entered run")
         while not rospy.is_shutdown():
             rate.sleep()
-            print("running")
+            #print("running")
 
-            # Publish saved msg
+            # Publish saved msg -> publishing only if odom_msg_recv
             if self.odom_msg_recv:
                 self.image_pub.publish(self.ros_img)
 
@@ -317,7 +326,7 @@ class PrintPosition():
 
 if __name__ == '__main__':
     try:
-        p = PrintPosition(sys.argv[1])
+        p = PrintPosition(sys.argv[1], sys.argv[2])
         print("Here")
         p.run()
     except rospy.ROSInterruptException:
