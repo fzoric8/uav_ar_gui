@@ -1,0 +1,13 @@
+compass:
+    px: 30
+    py: 20
+    rad: 50
+artificial_horizon:
+    px: 620
+    py: 20
+height:
+    px: 30
+    py: 440
+linear_velocity:
+    px: 130
+    py: 440
