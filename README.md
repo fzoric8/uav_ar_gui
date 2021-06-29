@@ -17,6 +17,6 @@
 ## TODO: 
 
 - [ ] Change package name 
-- [ ] [PEP8 Code Styling](https://www.python.org/dev/peps/pep-0008/)   
+- [x] [PEP8 Code Styling](https://www.python.org/dev/peps/pep-0008/)   
 - [ ] Check different layouts / inspect different python plotting libraries (Compass, different artifical horizon positioning, decoupled roll, pitch)
 - [ ] [Explore UX/UI design for FPV](https://www.rightware.com/blog/the-future-of-automotive-ux-from-the-designers-perspective)     	
