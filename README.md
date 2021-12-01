@@ -18,9 +18,11 @@ Scripts for implementing graphical user interface as part of HMI (human machine 
 
 ## TODO: 
 
+- [ ] Test with python3 
 - [ ] Test with official larics simulation stack 
 - [ ] Add sweep plotter on UI
 - [ ] Add visualization of human pose estimation for HMI control 
 - [ ] Change package name (still probniPack)
 - [ ] Test on Raspberry PI
+- [ ] Update documentation instructions (a) sim (b) real robot
 - [ ] clean catkin text
