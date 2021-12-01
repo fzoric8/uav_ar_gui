@@ -1,4 +1,6 @@
-# probniPack
+# UAV augumented reality GUI 
+
+Scripts for implementing graphical user interface as part of HMI (human machine interface) for UAV operator and UAV. 
 
 # Required dependencies (drawGUI):
 * numpy
@@ -16,7 +18,9 @@
 
 ## TODO: 
 
-- [ ] Change package name 
-- [x] [PEP8 Code Styling](https://www.python.org/dev/peps/pep-0008/)   
-- [ ] Check different layouts / inspect different python plotting libraries (Compass, different artifical horizon positioning, decoupled roll, pitch)
-- [ ] [Explore UX/UI design for FPV](https://www.rightware.com/blog/the-future-of-automotive-ux-from-the-designers-perspective)     	
+- [ ] Test with official larics simulation stack 
+- [ ] Add sweep plotter on UI
+- [ ] Add visualization of human pose estimation for HMI control 
+- [ ] Change package name (still probniPack)
+- [ ] Test on Raspberry PI
+- [ ] clean catkin text
