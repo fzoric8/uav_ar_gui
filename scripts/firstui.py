@@ -18,11 +18,7 @@ from rospy.numpy_msg import numpy_msg
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 #TODO: 
-# - add relative paths
-# - configure correct topic names 
-# - add different subscribers and flags if we want to use normal ROS image or ImageCompressed 
-# - test compressed image 
-
+# - Add signal health to determine latency between UAV and operator (Check timestamp of an image, and current time and determine if it's ok to operate)
 
 class PrintPosition():
     """GUI for drone simulation
@@ -99,6 +95,8 @@ class PrintPosition():
     def cam_compressed_callback(self, compr_image):
         
         self.compressed_img_recv = True
+
+        self.comp_img_reciv_t = compr_image.header.stamp.to_sec()
         self.compressed_img = compr_image.data
 
         # Transform directly to PILLOW image
@@ -159,6 +157,9 @@ class PrintPosition():
 
         start_t = rospy.Time.now().to_sec()
 
+        if self.compressed_img_recv:
+            health = self.comp_img_reciv_t - start_t
+            print("Current health is:", health)
         pil_img = PrintPosition.draw_gui(height, linear_velocity_str, roll, pitch, yaw, pil_img, self.gui_cfg, self.font_path)
         duration = rospy.Time.now().to_sec() - start_t
         debug_duration = True

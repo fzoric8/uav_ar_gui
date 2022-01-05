@@ -40,6 +40,21 @@ ROS_IP=192.168.0.20
 
 Both of those are added to corresponding `~/.bashrc`
 
+## rPi 
+
+Credentials are: 
+```
+username: rPi 
+pass: raspberry
+```
+
+## How to show it? 
+
+For showing AR GUI currently i plan to use [rosboard](https://github.com/dheera/rosboard). 
+Reasons are following: 
+ * Easily configurable for image topics 
+ * web-server which is accessible from any browser on local host 
+ * better than rviz for current use-case 
 
 ## TODO: 
 
