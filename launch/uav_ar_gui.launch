@@ -1,6 +1,6 @@
 <launch>
 <arg name="frequency" value="40"/> 
-<arg name="use_mmuav_simulation" value="true"/>
+<arg name="use_mmuav_simulation" value="false"/>
 <arg name="config_name" value="mmuav_config.yml"/>
 
 <group if="$(arg use_mmuav_simulation)">
@@ -14,7 +14,7 @@
 
 </group>
 
-<node pkg="probniPack" type="firstui.py" name="drone_odom_subscriber_node" output="screen" args="$(arg frequency) $(arg config_name)"></node>
+<node pkg="uav_ar_gui" type="firstui.py" name="uav_AR_gui_node" output="screen" args="$(arg frequency) $(arg config_name)"></node>
 
 
 </launch>

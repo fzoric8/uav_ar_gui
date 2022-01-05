@@ -1,6 +1,7 @@
 topics:
     odm_sub: "/uav/odometry"
-    cam_sub: "/usb_cam/image_raw"
+    cam_sub: "/uav/camera/color/image_raw"
+    cam_compressed_sub: "/uav/camera/color/image_raw/compressed"
     ui_pub: "/uav/gui"
 
 

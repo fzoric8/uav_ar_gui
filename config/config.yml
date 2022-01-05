@@ -1,4 +1,5 @@
 topics: 
     odm_sub: "/firefly/ground_truth/odometry"
     cam_sub: "/firefly/vi_sensor/right/image_raw"
+    cam_compressed_sub: "/firefly/vi_sensor/right/image_raw/compressed"
     ui_pub: "/uav/gui"

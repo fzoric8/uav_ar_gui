@@ -2,13 +2,26 @@
 import rospy
 import sys
 import yaml
-from rospy.numpy_msg import numpy_msg
-import numpy as np
+import io
 import math
-from nav_msgs.msg import Odometry
+import rospkg
+import numpy as np
+
+
 from PIL import Image as PILImage, ImageFont, ImageDraw
+
 from sensor_msgs.msg import Image as ROSImage
+from sensor_msgs.msg import CompressedImage
+from nav_msgs.msg import Odometry
+from rospy.numpy_msg import numpy_msg
+
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+
+#TODO: 
+# - add relative paths
+# - configure correct topic names 
+# - add different subscribers and flags if we want to use normal ROS image or ImageCompressed 
+# - test compressed image 
 
 
 class PrintPosition():
@@ -21,23 +34,45 @@ class PrintPosition():
             frequency (integer): A frequency used for sleep method to wait until next iteration
         """
         self.frequency = int(frequency)
-        rospy.init_node('drone_odom', anonymous=True)
+        rospy.init_node('uav_ar_gui', anonymous=True)
 
-        with open("/home/developer/catkin_ws/src/probniPack/config/{}".format(config_name), "r") as ymlfile:
+        rospack = rospkg.RosPack()
+        self.origin_path = rospack.get_path("uav_ar_gui")
+
+        # Config paths
+        self.font_path = "{}/include/fonts/roboto.regular.ttf".format(self.origin_path)
+
+        with open("{}/config/{}".format(self.origin_path, config_name), "r") as ymlfile:
             cfg = yaml.load(ymlfile)
 
-        self.image_pub = rospy.Publisher(cfg["topics"]["ui_pub"], ROSImage, queue_size=1)
+        with open("{}/config/finalgui.yml".format(self.origin_path), "r") as ymlfile:
+            self.gui_cfg = yaml.load(ymlfile)
 
-        self.odom_sub = rospy.Subscriber(cfg["topics"]["odm_sub"], Odometry, self.odom_callback, queue_size=1)
+        # Subs/Pubs
+        ui_pub_name = cfg["topics"]["ui_pub"]
+        self.image_pub = rospy.Publisher(ui_pub_name, ROSImage, queue_size=1)
 
-        self.cam_sub = rospy.Subscriber(cfg["topics"]["cam_sub"], numpy_msg(ROSImage), self.cam_callback, queue_size=1)
+        odom_sub_name = cfg["topics"]["odm_sub"]
+        self.odom_sub = rospy.Subscriber(odom_sub_name, Odometry, self.odom_callback, queue_size=1)
 
+        cam_sub_name = cfg["topics"]["cam_sub"]
+        self.cam_sub = rospy.Subscriber(cam_sub_name, numpy_msg(ROSImage), self.cam_callback, queue_size=1)
+
+        cam_compressed_sub_name = cfg["topics"]["cam_compressed_sub"]
+        self.cam_compressed_sub = rospy.Subscriber(cam_compressed_sub_name, CompressedImage, self.cam_compressed_callback, queue_size=1)
+
+        # Recv flags
         self.odom_msg_recv = False
         self.img_recv = False
         # ROS Image
         self.ros_img = ROSImage()
         self.cam_img = None
         self.pimg=None
+
+        # Use proper image (Compressed for rPi)
+        self.use_normal_image = False
+        self.use_compressed_image = not self.use_normal_image
+        self.wanted_width, self.wanted_height = 640, 480
 
 
     def cam_callback(self, image):
@@ -50,7 +85,7 @@ class PrintPosition():
 
         if (image.encoding == "rgb8"):
             self.cam_img = np.frombuffer(image.data, dtype=np.uint8).reshape(
-            image.height, image.width, 3)
+                image.height, image.width, 3)
           
         else:
             
@@ -61,38 +96,70 @@ class PrintPosition():
             self.cam_img = np.stack((self.cam_img,)*3, axis=-1)
 
 
+    def cam_compressed_callback(self, compr_image):
+        
+        self.compressed_img_recv = True
+        self.compressed_img = compr_image.data
+
+        # Transform directly to PILLOW image
+
+
     def odom_callback(self, data):
         """Callback function for Odometry (Calculates the height, linear velocity and yaw rotation of the drone; Processes the image for GUI)
 
         Args:
             data (nav_msgs.msg._Odometry.Odometry): Odometry represents an estimate of a position and velocity in free space
         """
+
         self.odom_msg_recv = True
         self.odom = Odometry()
+
         height = round(data.pose.pose.position.z, 3)
         height = str(height)
+
         linvel_x = data.twist.twist.linear.x
         linvel_y = data.twist.twist.linear.y
         linvel_z = data.twist.twist.linear.z
         linear_velocity = math.sqrt(linvel_x*linvel_x + linvel_y*linvel_y + linvel_z*linvel_z)
         linear_velocity = round(linear_velocity, 3)
         linear_velocity_str = str(linear_velocity)
+
         roll,pitch,yaw = PrintPosition.get_rotation(data)
         roll = math.degrees(roll)
         yaw = math.degrees(yaw)
         pitch = math.degrees(pitch)
+
         try:
-            if type(self.cam_img) is np.ndarray:
-                if self.img_recv:
-                    pil_img = PILImage.fromarray(self.cam_img.astype('uint8'), 'RGB')
+
+            if self.use_normal_image: 
+                if type(self.cam_img) is np.ndarray:
+                    if self.img_recv:
+                        pil_img = PILImage.fromarray(self.cam_img.astype('uint8'), 'RGB')
+                        self.pimg = pil_img
+                else:
+                    pil_img = PILImage.new("RGBA", (640, 480), 'white')
+
+            if self.use_compressed_image: 
+                if self.compressed_img_recv: 
+                    pil_img = PILImage.open(io.BytesIO(bytearray(self.compressed_img)))
+                    # Faste debugging of compressed image
+                    debug_compressed_img = False
+                    if debug_compressed_img:
+                        print(pil_img.size)
+                    resize = True
+                    # It's approximately 10 times faster to paint this picture than 1920/1080 (3x3 channels = 9)
+                    if resize: 
+                        pil_img = pil_img.resize((self.wanted_width, self.wanted_height))
+
                     self.pimg = pil_img
-            else:
-                pil_img = PILImage.new("RGBA", (640, 480), 'white')
+                
         except Exception as e:
             if self.img_recv and self.pimg: 
                 pil_img = self.pimg
+
         start_t = rospy.Time.now().to_sec()
-        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, roll, pitch, yaw, pil_img)
+
+        pil_img = PrintPosition.draw_gui(height, linear_velocity_str, roll, pitch, yaw, pil_img, self.gui_cfg, self.font_path)
         duration = rospy.Time.now().to_sec() - start_t
         debug_duration = True
         if debug_duration:
@@ -265,23 +332,8 @@ class PrintPosition():
 
         return pil_img
 
-
-    def run(self):
-        """Function for publishing ros image
-        """
-        rate = rospy.Rate(self.frequency)
-        print("Entered run")
-        while not rospy.is_shutdown():
-            rate.sleep()
-            #print("running")
-
-            # Publish saved msg -> publishing only if odom_msg_recv
-            if self.odom_msg_recv:
-                self.image_pub.publish(self.ros_img)
-
-
     @staticmethod
-    def draw_gui(drone_height, linear_velocity, roll, pitch, yaw, pil_img):
+    def draw_gui(drone_height, linear_velocity, roll, pitch, yaw, pil_img, cfg, font_path):
         """Function for drawing GUI on a pillow image
 
         Args:
@@ -295,8 +347,6 @@ class PrintPosition():
         Returns:
             PIL.Image.Image: Pillow image that represents GUI
         """
-        with open("/home/developer/catkin_ws/src/probniPack/config/finalgui.yml", "r") as ymlfile:
-            cfg = yaml.load(ymlfile)
 
         comp_ellipse_center_x = cfg["compass"]["px"]
         comp_ellipse_center_y = cfg["compass"]["py"]
@@ -311,7 +361,7 @@ class PrintPosition():
         angle_deg_yaw = yaw
         angle_deg_pitch = pitch
 
-        font = ImageFont.truetype("/home/developer/catkin_ws/src/probniPack/include/probniPack/fonts/roboto.regular.ttf", 15, encoding="unic")
+        font = ImageFont.truetype(font_path, 15, encoding="unic")
         draw = ImageDraw.Draw(pil_img)
         draw.rectangle((height_px - 3, height_py - 2, height_px + 75, height_py + 30), fill = (177, 177, 177), outline = None, width = 1)
         draw.rectangle((linear_velocity_px - 3, linear_velocity_py - 2, linear_velocity_px + 130, linear_velocity_py + 30), fill = (177, 177, 177), outline = None, width = 1)
@@ -321,8 +371,22 @@ class PrintPosition():
         draw.text((linear_velocity_px + 20, linear_velocity_py + 15), linear_velocity + " m/s", (0, 0, 0), font=font)
         pil_img = PrintPosition.draw_compass_on_image(pil_img, comp_ellipse_center_x, comp_ellipse_center_y, comp_ellipse_radius, angle_deg_yaw, font)
         pil_img = PrintPosition.draw_roll_and_pitch_attitude_indicator(pil_img, ah_ellipse_center_x, ah_ellipse_center_y, comp_ellipse_radius, angle_deg_roll, angle_deg_pitch, font)
+
         return pil_img
 
+
+    def run(self):
+        """Function for publishing ros image
+        """
+        rate = rospy.Rate(self.frequency)
+        print("Entered run")
+        while not rospy.is_shutdown():
+            rate.sleep()
+            #print("running")
+
+            # Publish saved msg -> publishing only if odom_msg_recv
+            if self.odom_msg_recv:
+                self.image_pub.publish(self.ros_img)
 
 if __name__ == '__main__':
     try:
