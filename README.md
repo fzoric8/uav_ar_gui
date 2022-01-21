@@ -96,6 +96,17 @@ Reasons are following:
  * web-server which is accessible from any browser on local host 
  * better than rviz for current use-case 
 
+## How to install grpcio tools. 
+
+Follow this instructions to install grpcio-tools: 
+
+```
+sudo apt-get install python3-pip 
+```
+
+After that installation of `grpcio-tools` you can follow this [link](https://stackoverflow.com/questions/56357794/unable-to-install-grpcio-using-pip-install-grpcio)
+
+
 ## TODO: 
 
 - [x] Change package name
