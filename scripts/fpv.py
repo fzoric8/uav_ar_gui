@@ -49,7 +49,7 @@ class fpvGUI():
             self.gui_cfg = yaml.load(ymlfile)
 
         # Use zone drawing for human pose estimation to enable feedback on FPV 
-        self.use_hpe = True
+        self.use_hpe = False
 
         # Recv flags
         self.odom_msg_recv = False
@@ -66,6 +66,8 @@ class fpvGUI():
         self.use_compressed_image = not self.use_normal_image
 
         self._init_subscribers(); self._init_publishers(); 
+
+        rospy.loginfo("[UAVArGui] Initialized!")
 
     def _init_subscribers(self): 
         
@@ -242,23 +244,34 @@ class fpvGUI():
             else: 
                 self.recv_condition = self.img_recv
 
+            rospy.logdebug("self.recv_condition: {}".format(self.recv_condition))
+            rospy.logdebug("self.img_recv: {}".format(self.img_recv))
+
             if self.odom_msg_recv and self.recv_condition:
                 
-                start_t = rospy.Time.now().to_sec()
-                hpe_img = self.hpe_img; pil_img = self.pil_img
-                hpe_img = PILImage.fromarray(self.hpe_img.astype('uint8'), 'RGB')
+                # Create hpe_img for UAV gui draw!
+                if self.use_hpe:
+                    hpe_img = self.hpe_img; 
+                else:
+                    hpe_img = None
 
+                rospy.loginfo("Started!")
+                start_t = rospy.Time.now().to_sec()
+                
+                pil_img = self.pil_img
                 pil_img = self.create_fpv(pil_img, hpe_img)
 
                 duration = rospy.Time.now().to_sec() - start_t
                 
                 debug_duration = True
                 if debug_duration:
-                    print("Draw GUI on image lasts: {}".format(duration))
+                    rospy.logdebug("Draw GUI on image lasts: {}".format(duration))
 
                 self.ros_img = fpvGUI.convert_pil_to_ros_img(self, pil_img)
 
                 self.image_pub.publish(self.ros_img)
+
+            rospy.sleep(0.025)
 
     @staticmethod
     def convert_pil_to_ros_img(self, img):
@@ -287,8 +300,8 @@ class fpvGUI():
 
         Args:
             pil_img (PIL.Image.Image): Pillow image used for drawing GUI
-            ellipse_center_x (int): X coordinate for positioning of the compass (top left corner of an imaginary square)
-            cy (int): Y coordiante for positioning of the compass (top left corner of an imaginary square)
+            cx (int): X coordinate for positioning of the compass (center_x of an imaginary square)
+            cy (int): Y coordiante for positioning of the compass (center_y of an imaginary square)
             diameter (int): Diameter of the compass
             angle_deg (float): Yaw rotation of a drone in degrees
             font (PIL.ImageFont.FreeTypeFont): Font style used to format text on pillow image 
@@ -304,46 +317,46 @@ class fpvGUI():
 
         # TODO: Fix text to fit new compass
         draw = ImageDraw.Draw(pil_img)
-        draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(211, 211, 211), outline='black')
-        draw.text((cx + 47, cy - 20), "N", (0, 0, 0), font=font)
-        draw.text((cx + r + 56, cy + r), "E", (0, 0, 0), font=font)
-        draw.text((cx + 47, cy + r + r + 5), "S", (0, 0, 0), font=font)
-        draw.text((cx - 20, cy + r), "W", (0, 0, 0), font=font)
+        draw.ellipse((px1, py1, cx + r, cy + r), fill=(211, 211, 211), outline='black', width=3)
+        #draw.text((cx + 47, cy - 20), "N", (0, 0, 0), font=font)
+        #draw.text((cx + r + 56, cy + r), "E", (0, 0, 0), font=font)
+        #draw.text((cx + 47, cy + r + r + 5), "S", (0, 0, 0), font=font)
+        #draw.text((cx - 20, cy + r), "W", (0, 0, 0), font=font)
 
         if angle_deg < 0:
-            angle_deg = 360+angle_deg
+            angle_deg = 360 + angle_deg
         angle_rad = math.radians(angle_deg)
 
         # Could be possible to use atan2 instead of all this sine/cosine operations
         if angle_deg >= 0 and angle_deg < 90:
-            angle_deg = 90-angle_deg
+            angle_deg = 90 - angle_deg
             angle_rad = math.radians(angle_deg)
-            px2 = cx + r - r * math.cos(angle_rad)
-            py2 = cy + r - r * math.sin(angle_rad)
+            px2 = cx - r * math.cos(angle_rad)
+            py2 = cy - r * math.sin(angle_rad)
 
         elif angle_deg >= 90 and angle_deg <= 180:
-            angle_deg = angle_deg-90
+            angle_deg = angle_deg - 90
             angle_rad = math.radians(angle_deg)
             if angle_deg == 0:
                 px2 = cx
             else:
-                px2 = cx + r - r * math.cos(angle_rad)
+                px2 = cx - r * math.cos(angle_rad)
             py2 = (r * math.sin(angle_rad)) + cy + r
 
         elif angle_deg > 180 and angle_deg <= 270:
             angle_deg = 360 - angle_deg - 90
             angle_rad = math.radians(angle_deg)
-            px2 = cx + r + r * math.cos(angle_rad)
-            py2 = cy + r + r * math.sin(angle_rad)
+            px2 = cx + r * math.cos(angle_rad)
+            py2 = cy + r * math.sin(angle_rad)
 
         else:
-            angle_deg = 90-(360-angle_deg)
+            angle_deg = 90 - (360-angle_deg)
             angle_rad = math.radians(angle_deg)
-            px2 = cx + r + r * math.cos(angle_rad)
-            py2 = cy + r - r * math.sin(angle_rad)
+            px2 = cx + r * math.cos(angle_rad)
+            py2 = cy - r * math.sin(angle_rad)
 
-        draw.line((cx + r, cy + r, px2, py2), fill=(255, 0, 0), width=3)
-        draw.ellipse((px1, py1, px2, py2), fill=(169, 169, 169), outline = None)
+        draw.line((cx, cy, px2, py2), fill=(255, 0, 0), width=5)
+        draw.ellipse((cx - r/20, cy - r/20, cx + r/20, cy + r/20), fill=(169, 169, 169), outline = None)
         
         return pil_img
 
@@ -353,7 +366,7 @@ class fpvGUI():
         Args:
             pil_img (PIL.Image.Image): Pillow image used for drawing GUI
             cx (int): X coordinate for positioning of the roll artificial horizon
-            ellipse_center_y (int): Y coordinate for positioning of the roll artificial horizon
+            cy (int): Y coordinate for positioning of the roll artificial horizon
             ellipse_radius (int): Radius of the attitude indicator
             angle_deg_roll (float): Roll rotation of a drone in degrees
             angle_deg_pitch (float): Pitch rotation of a drone in degrees
@@ -366,10 +379,13 @@ class fpvGUI():
         # radius = diameter/2
         r = d/2
 
-        draw.ellipse((cx, cy, cx + d, cy + d), fill=(134, 197, 218))
+        px1 = cx - r; py1 = cy - r 
+        px2 = cx + r; py2 = cy + r; 
+
+        draw.ellipse((px1, py1, px2, py2), fill=(134, 197, 218))
         draw.text((cx - 5, cy - 18), "Artificial horizon", (0,0,0), font=font)
-        draw.chord((cx, cy, cx + d, cy + d), roll_deg - pitch_deg, roll_deg + pitch_deg + 180, fill=(0,190,0))
-        draw.line((cx, cy + r, cx + d, cy + r), fill=(0, 0, 0), width=1)
+        draw.chord((px1, py1, px2, py2), roll_deg - pitch_deg, roll_deg + pitch_deg + 180, fill=(0,190,0))
+        draw.line((px1, cy, cx + r, cy), fill=(0, 0, 0), width=1)
         
         return pil_img
 

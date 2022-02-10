@@ -2,6 +2,8 @@ topics:
     odm_sub: "/uav/odometry"
     cam_sub: "/uav/camera/color/image_raw"
     cam_compressed_sub: "/uav/camera/color/image_raw/compressed"
+    hpe_zone_sub: "/stickman_cont_area"
     ui_pub: "/uav/gui"
+
 
 

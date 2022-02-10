@@ -1,14 +1,14 @@
 compass:
-    cx: 50
-    cy: 175
+    cx: 200
+    cy: 200
     d: 300
 artificial_horizon:
-    cx: 900
-    cy: 175
+    cx: 1200
+    cy: 200
     d: 300
 height:
-    cx: 30
-    cy: 440
+    cx: 1100
+    cy: 800
 linear_velocity:
-    cx: 130
-    cy: 440
+    cx: 1100
+    cy: 800
