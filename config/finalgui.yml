@@ -1,10 +1,11 @@
 compass:
-    px: 30
-    py: 20
-    rad: 50
+    px: 200
+    py: 50
+    d: 300
 artificial_horizon:
-    px: 500
-    py: 20
+    px: 800
+    py: 50
+    d:
 height:
     px: 30
     py: 440

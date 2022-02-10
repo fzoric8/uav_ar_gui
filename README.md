@@ -106,6 +106,20 @@ sudo apt-get install python3-pip
 
 After that installation of `grpcio-tools` you can follow this [link](https://stackoverflow.com/questions/56357794/unable-to-install-grpcio-using-pip-install-grpcio)
 
+## Pillow installation procedure
+
+Started using [Pillow-SIMD] which is few times faster than classical Pillow, 
+
+You can install it as follows: 
+
+```
+sudo apt-get install libfreetype6-dev
+pip install --upgrade pip 
+pip install pillow-simd==5.3.0.post0
+```
+
+=======
+
 
 ## TODO: 
 
