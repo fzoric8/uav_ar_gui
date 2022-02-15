@@ -25,14 +25,14 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 class fpvGUI():
     """GUI for drone simulation
     """
-    def __init__(self, frequency, config_name, gui_config):
+    def __init__(self, frequency, config_name, gui_config, use_hpe):
         """Constructor of fpvGUI class
 
         Args:
             frequency (integer): A frequency used for sleep method to wait until next iteration
         """
         self.frequency = int(frequency)
-        rospy.init_node('uav_ar_gui', anonymous=True)
+        rospy.init_node('uav_ar_gui', anonymous=True, log_level=rospy.DEBUG)
 
         rospack = rospkg.RosPack()
         self.origin_path = rospack.get_path("uav_ar_gui")
@@ -49,11 +49,12 @@ class fpvGUI():
             self.gui_cfg = yaml.load(ymlfile)
 
         # Use zone drawing for human pose estimation to enable feedback on FPV 
-        self.use_hpe = False
+        self.use_hpe = str2bool(use_hpe)
 
         # Recv flags
         self.odom_msg_recv = False
         self.img_recv = False
+        self.hpe_img_recv = False
         self.compressed_img_recv = False
         
         # ROS Image
@@ -86,11 +87,15 @@ class fpvGUI():
             self.hpe_sub = rospy.Subscriber(hpe_zones_name, numpy_msg(ROSImage), self.hpe_callback, queue_size=1)
             self.hpe_img_recv = False
 
+        rospy.loginfo("[UAVArGui] Initialized subscribers!")
+
     def _init_publishers(self): 
         
         # Pubs
         ui_pub_name = self.cfg["topics"]["ui_pub"]
         self.image_pub = rospy.Publisher(ui_pub_name, ROSImage, queue_size=1)
+
+        rospy.loginfo("[UAVArGui] Initialized publishers!")
 
     def cam_callback(self, image):
         """Callback function for getting image from drone camera
@@ -225,8 +230,9 @@ class fpvGUI():
         pil_img = fpvGUI.draw_compass_on_image(pil_img, comp_cx, comp_cy, comp_d, yaw_deg, font)
         # Draw roll and pitch attitude indicator
         pil_img = fpvGUI.draw_roll_and_pitch_attitude_indicator(pil_img, ah_cx, ah_cy, ah_d, roll_deg, pitch_deg, font)
+        
         # Add zones for feedback on UI 
-        if hpe_img:
+        if self.hpe_img_recv and self.use_hpe:
             img_width, img_height = self.img_width, self.img_height
             pil_img = fpvGUI.add_hpe_zones_on_image(pil_img, hpe_img, img_width, img_height)
 
@@ -242,11 +248,16 @@ class fpvGUI():
             if self.use_hpe: 
                 self.recv_condition = self.img_recv and self.hpe_img_recv
             else: 
-                self.recv_condition = self.img_recv
+                # Sometimes run method calls create_fpv before having self.pil_img, therefore we
+                # check if pillow image exists
+                self.recv_condition = self.img_recv and self.pil_img != None
 
+            # Debug prints
+            rospy.logdebug("self.use_hpe: {}".format(self.use_hpe))
             rospy.logdebug("self.recv_condition: {}".format(self.recv_condition))
             rospy.logdebug("self.img_recv: {}".format(self.img_recv))
-
+            rospy.logdebug("self.hpe_img_recv: {}".format(self.hpe_img_recv))
+            
             if self.odom_msg_recv and self.recv_condition:
                 
                 # Create hpe_img for UAV gui draw!
@@ -255,7 +266,6 @@ class fpvGUI():
                 else:
                     hpe_img = None
 
-                rospy.loginfo("Started!")
                 start_t = rospy.Time.now().to_sec()
                 
                 pil_img = self.pil_img
@@ -394,15 +404,32 @@ class fpvGUI():
 
         # Conditions 
         # Target Image has to have smaller resolution than src PIL image 
-        target_pil_img.resize((img_width/4, img_height/4)) 
-        src_pil_img.paste(target_pil_img, box=(0, (img_height * 3)/4))
+        rospy.logdebug("img height is: {}".format(img_height))
+        rospy.logdebug("img width is: {}".format(img_width))
+
+        src_pil_img_w, src_pil_img_h = src_pil_img.size
+
+        # Added this copy to create new image for using
+        hpe_img = PILImage.fromarray(target_pil_img.copy())
+        rospy.logdebug("Type: {}".format(type(hpe_img)))
+        hpe_img.resize((src_pil_img_h/5, src_pil_img_w/5)) 
+
+        rospy.logdebug("src_pil_img multi: {}".format(src_pil_img_h * 3 / 5))
+        rospy.logdebug("src_pil_img minus: {}".format(src_pil_img_h - hpe_img.size[1]))
+
+        src_pil_img.paste(hpe_img, box=(0, (src_pil_img_h * 3)/5))
 
         return src_pil_img
 
+# Must be a better way to do this?!
+# https://stackoverflow.com/questions/715417/converting-from-a-string-to-boolean-in-python
+# I remember having this problem before, ask around about it!
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
   
 if __name__ == '__main__':
     try:
-        p = fpvGUI(sys.argv[1], sys.argv[2], sys.argv[3])
+        p = fpvGUI(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
         p.run()
 
     except rospy.ROSInterruptException:

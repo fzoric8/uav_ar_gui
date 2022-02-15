@@ -3,6 +3,7 @@
 <arg name="use_mmuav_simulation" value="false"/>
 <arg name="config_name" value="bebop.yml"/>
 <arg name="gui_config" value="bebop_gui.yml"/>
+<arg name="use_hpe" default="true"/>
 
 <group if="$(arg use_mmuav_simulation)">
 
@@ -15,7 +16,7 @@
 
 </group>
 
-<node pkg="uav_ar_gui" type="fpv.py" name="uav_AR_gui_node" output="screen" args="$(arg frequency) $(arg config_name) $(arg gui_config)"></node>
+<node pkg="uav_ar_gui" type="fpv.py" name="uav_AR_gui_node" output="screen" args="$(arg frequency) $(arg config_name) $(arg gui_config) $(arg use_hpe)"></node>
 
 
 </launch>

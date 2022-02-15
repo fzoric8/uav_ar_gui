@@ -118,6 +118,9 @@ pip install pillow-simd==5.3.0.post0
 ```
 
 
+[Antialiasing](https://stackoverflow.com/questions/14350645/is-there-an-antialiasing-method-for-python-pil) 
+
+
 
 ## TODO: 
 
