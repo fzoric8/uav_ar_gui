@@ -40,6 +40,46 @@ ROS_IP=192.168.0.20
 
 Both of those are added to corresponding `~/.bashrc`
 
+## Current bandwith status
+
+```
+subscribed to [/stickman_compressed_ctl_area]
+average: 763.17KB/s
+	mean: 97.05KB min: 92.18KB max: 104.10KB window: 7
+average: 628.11KB/s
+	mean: 99.00KB min: 92.18KB max: 105.35KB window: 12
+average: 648.76KB/s
+	mean: 98.77KB min: 92.18KB max: 105.91KB window: 19
+```
+
+```
+rostopic bw /uav/rod_camera/image_raw/compressed
+subscribed to [/uav/rod_camera/image_raw/compressed]
+average: 234.52KB/s
+	mean: 13.04KB min: 12.85KB max: 13.58KB window: 11
+average: 217.45KB/s
+	mean: 12.99KB min: 12.81KB max: 13.58KB window: 27
+average: 223.44KB/s
+	mean: 12.98KB min: 12.81KB max: 13.58KB window: 45
+average: 218.94KB/s
+```
+
+Client PC: 
+```
+average rate: 6.384
+	min: 0.067s max: 0.496s std dev: 0.05048s window: 446
+average rate: 6.377
+	min: 0.067s max: 0.496s std dev: 0.05036s window: 451
+average rate: 6.370
+	min: 0.067s max: 0.496s std dev: 0.05022s window: 458
+average rate: 6.347
+	min: 0.067s max: 0.496s std dev: 0.05029s window: 463
+``` 
+
+Server PC has about 15 Hz. 
+
+
+=======
 ## rPi 
 
 Credentials are: 
@@ -55,6 +95,16 @@ Reasons are following:
  * Easily configurable for image topics 
  * web-server which is accessible from any browser on local host 
  * better than rviz for current use-case 
+
+## How to install grpcio tools. 
+
+Follow this instructions to install grpcio-tools: 
+
+```
+sudo apt-get install python3-pip 
+```
+
+After that installation of `grpcio-tools` you can follow this [link](https://stackoverflow.com/questions/56357794/unable-to-install-grpcio-using-pip-install-grpcio)
 
 ## Pillow installation procedure
 
@@ -77,9 +127,12 @@ pip install pillow-simd==5.3.0.post0
 - [x] test on raspberryPi
 - [x] use compressed_image
 - [x] minor refactoring
-- [ ] Test with python3 
-- [ ] Test with official larics simulation stack 
-- [ ] Add sweep plotter on UI 
-- [ ] Add visualization of human pose estimation for HMI control 
-- [ ] Update documentation instructions (a) sim (b) real robot
+- [x] Test with python3 
+- [ ] Test with official larics simulation stack --> POSTPONED  
+- [ ] Add sweep plotter on UI --> Cool stuff but I need laser for that (TBD) 
+- [x] Add visualization of human pose estimation for HMI control --> Added it to rosboard/quite easy 
+- [x] Use only compressed image 
+- [ ] Add chrony sinchronization 
+- [ ] Add image health (check timestamp vs current PC time) 
+- [ ] Update documentation instructions (a) sim (b) real robot 
 - [ ] clean catkin text
