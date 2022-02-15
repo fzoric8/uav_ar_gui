@@ -79,7 +79,6 @@ average rate: 6.347
 Server PC has about 15 Hz. 
 
 
-=======
 ## rPi 
 
 Credentials are: 
@@ -108,7 +107,7 @@ After that installation of `grpcio-tools` you can follow this [link](https://sta
 
 ## Pillow installation procedure
 
-Started using [Pillow-SIMD] which is few times faster than classical Pillow, 
+Started using [Pillow-SIMD](https://github.com/uploadcare/pillow-simd) which is few times faster than classical Pillow, 
 
 You can install it as follows: 
 
@@ -118,7 +117,9 @@ pip install --upgrade pip
 pip install pillow-simd==5.3.0.post0
 ```
 
+
 [Antialiasing](https://stackoverflow.com/questions/14350645/is-there-an-antialiasing-method-for-python-pil) 
+
 
 
 ## TODO: 
@@ -132,7 +133,7 @@ pip install pillow-simd==5.3.0.post0
 - [ ] Add sweep plotter on UI --> Cool stuff but I need laser for that (TBD) 
 - [x] Add visualization of human pose estimation for HMI control --> Added it to rosboard/quite easy 
 - [x] Use only compressed image 
-- [ ] Add chrony sinchronization 
+- [x] Add chrony sinchronization 
 - [ ] Add image health (check timestamp vs current PC time) 
 - [ ] Update documentation instructions (a) sim (b) real robot 
 - [ ] clean catkin text
