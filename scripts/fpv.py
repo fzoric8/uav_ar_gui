@@ -256,6 +256,7 @@ class fpvGUI():
             rospy.logdebug("self.use_hpe: {}".format(self.use_hpe))
             rospy.logdebug("self.recv_condition: {}".format(self.recv_condition))
             rospy.logdebug("self.img_recv: {}".format(self.img_recv))
+            rospy.logdebug("self.hpe_img_recv: {}".format(self.hpe_img_recv))
             
             if self.odom_msg_recv and self.recv_condition:
                 
