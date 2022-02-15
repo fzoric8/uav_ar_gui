@@ -3,7 +3,7 @@
 <arg name="use_mmuav_simulation" value="false"/>
 <arg name="config_name" value="bebop.yml"/>
 <arg name="gui_config" value="bebop_gui.yml"/>
-<arg name="use_hpe" value="false"/>
+<arg name="use_hpe" default="true"/>
 
 <group if="$(arg use_mmuav_simulation)">
 

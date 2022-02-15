@@ -49,11 +49,12 @@ class fpvGUI():
             self.gui_cfg = yaml.load(ymlfile)
 
         # Use zone drawing for human pose estimation to enable feedback on FPV 
-        self.use_hpe = use_hpe
+        self.use_hpe = str2bool(use_hpe)
 
         # Recv flags
         self.odom_msg_recv = False
         self.img_recv = False
+        self.hpe_img_recv = False
         self.compressed_img_recv = False
         
         # ROS Image
@@ -247,8 +248,12 @@ class fpvGUI():
             if self.use_hpe: 
                 self.recv_condition = self.img_recv and self.hpe_img_recv
             else: 
-                self.recv_condition = self.img_recv
+                # Sometimes run method calls create_fpv before having self.pil_img, therefore we
+                # check if pillow image exists
+                self.recv_condition = self.img_recv and self.pil_img != None
 
+            # Debug prints
+            rospy.logdebug("self.use_hpe: {}".format(self.use_hpe))
             rospy.logdebug("self.recv_condition: {}".format(self.recv_condition))
             rospy.logdebug("self.img_recv: {}".format(self.img_recv))
             
@@ -260,7 +265,6 @@ class fpvGUI():
                 else:
                     hpe_img = None
 
-                rospy.loginfo("Started!")
                 start_t = rospy.Time.now().to_sec()
                 
                 pil_img = self.pil_img
@@ -399,7 +403,6 @@ class fpvGUI():
 
         # Conditions 
         # Target Image has to have smaller resolution than src PIL image 
-
         rospy.logdebug("img height is: {}".format(img_height))
         rospy.logdebug("img width is: {}".format(img_width))
 
@@ -417,6 +420,11 @@ class fpvGUI():
 
         return src_pil_img
 
+# Must be a better way to do this?!
+# https://stackoverflow.com/questions/715417/converting-from-a-string-to-boolean-in-python
+# I remember having this problem before, ask around about it!
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
   
 if __name__ == '__main__':
     try:
