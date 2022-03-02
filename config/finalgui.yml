@@ -3,12 +3,12 @@ compass:
     py: 50
     d: 300
 artificial_horizon:
-    px: 800
+    px: 1000
     py: 50
     d:
 height:
-    px: 30
-    py: 440
+    px: 1000
+    py: 500
 linear_velocity:
-    px: 130
-    py: 440
+    px: 1000
+    py: 250

@@ -17,11 +17,6 @@ from rospy.numpy_msg import numpy_msg
 
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-#TODO: 
-# - Add signal health to determine latency between UAV and operator (Check timestamp of an image, and current time and determine if it's ok to operate)
-# - Add stuff to determine what we control (uav/arm)
-# -
-
 class fpvGUI():
     """GUI for drone simulation
     """
@@ -38,7 +33,7 @@ class fpvGUI():
         self.origin_path = rospack.get_path("uav_ar_gui")
 
         # Config paths
-        self.font_path = "{}/include/fonts/roboto.regular.ttf".format(self.origin_path)
+        self.font_path = "{}/include/fonts/zagreb_underground.ttf".format(self.origin_path)
 
         # Open config path 
         with open("{}/config/{}".format(self.origin_path, config_name), "r") as ymlfile:
@@ -209,22 +204,25 @@ class fpvGUI():
         height_px = self.gui_cfg["height"]["cx"]
         height_py = self.gui_cfg["height"]["cy"]
 
-        linear_velocity_px = self.gui_cfg["linear_velocity"]["cx"]
-        linear_velocity_py = self.gui_cfg["linear_velocity"]["cy"]
+        lin_vel_px = self.gui_cfg["linear_velocity"]["cx"]
+        lin_vel_py = self.gui_cfg["linear_velocity"]["cy"]
 
         roll_deg = self.roll
         yaw_deg = self.yaw
         pitch_deg = self.pitch
 
         # Draw linear velocity and height
-        font = ImageFont.truetype(self.font_path, 15, encoding="unic")
+        fontsize = 32
+        font = ImageFont.truetype(self.font_path, fontsize, encoding="unic")
         draw = ImageDraw.Draw(pil_img)
-        draw.rectangle((height_px - 3, height_py - 2, height_px + 75, height_py + 30), fill = (177, 177, 177), outline = None, width = 1)
-        draw.rectangle((linear_velocity_px - 3, linear_velocity_py - 2, linear_velocity_px + 130, linear_velocity_py + 30), fill = (177, 177, 177), outline = None, width = 1)
-        draw.text((height_px, height_py), "HEIGHT:", (0, 0, 0), font=font)
-        draw.text((height_px + 20, height_py + 15), str(self.height) + " m", (0, 0, 0), font=font)
-        draw.text((linear_velocity_px, linear_velocity_py), "LINEAR VELOCITY:", (0, 0, 0), font=font)
-        draw.text((linear_velocity_px + 20, linear_velocity_py + 15), str(self.linear_velocity) + " m/s", (0, 0, 0), font=font)
+
+        draw.text((height_px, height_py), "altitude: " + str(self.height) + " m", (0, 255, 0), font=font)
+        rospy.logdebug("Height px: {}".format(height_px))
+        rospy.logdebug("Height py: {}".format(height_py))
+        rospy.logdebug("Linear velocity px: {}".format(lin_vel_px))
+        rospy.logdebug("Linear velocity py: {}".format(lin_vel_py))
+
+        draw.text((lin_vel_px, lin_vel_py), "velocity: " + str(self.linear_velocity) + " m/s", (0, 255, 0), font=font)
         
         # Draw compass
         pil_img = fpvGUI.draw_compass_on_image(pil_img, comp_cx, comp_cy, comp_d, yaw_deg, font)
@@ -324,14 +322,11 @@ class fpvGUI():
         r = d/2
         # Upper left corner of a compass
         px1, py1 = cx - r, cy - r 
+        offset = 10
 
         # TODO: Fix text to fit new compass
         draw = ImageDraw.Draw(pil_img)
-        draw.ellipse((px1, py1, cx + r, cy + r), fill=(211, 211, 211), outline='black', width=3)
-        #draw.text((cx + 47, cy - 20), "N", (0, 0, 0), font=font)
-        #draw.text((cx + r + 56, cy + r), "E", (0, 0, 0), font=font)
-        #draw.text((cx + 47, cy + r + r + 5), "S", (0, 0, 0), font=font)
-        #draw.text((cx - 20, cy + r), "W", (0, 0, 0), font=font)
+        draw.ellipse((px1, py1, cx + r, cy + r), fill=(211, 211, 211, 128), outline=(255, 255, 255, 120), width=3)
 
         if angle_deg < 0:
             angle_deg = 360 + angle_deg
@@ -351,7 +346,7 @@ class fpvGUI():
                 px2 = cx
             else:
                 px2 = cx - r * math.cos(angle_rad)
-            py2 = (r * math.sin(angle_rad)) + cy + r
+            py2 = cy + r * math.sin(angle_rad)
 
         elif angle_deg > 180 and angle_deg <= 270:
             angle_deg = 360 - angle_deg - 90
@@ -367,6 +362,12 @@ class fpvGUI():
 
         draw.line((cx, cy, px2, py2), fill=(255, 0, 0), width=5)
         draw.ellipse((cx - r/20, cy - r/20, cx + r/20, cy + r/20), fill=(169, 169, 169), outline = None)
+
+        draw.text((cx, cy - r - offset * 4),    "N", (0, 255, 0), font=font)
+        draw.text((cx - r - offset * 3, cy),    "W", (0, 255, 0), font=font)
+        draw.text((cx, cy + r + offset),        "S", (0, 255, 0), font=font)
+        draw.text((cx + r + offset, cy),        "E", (0, 255, 0), font=font)
+
         
         return pil_img
 
@@ -391,9 +392,13 @@ class fpvGUI():
 
         px1 = cx - r; py1 = cy - r 
         px2 = cx + r; py2 = cy + r; 
+        offset = 10; 
 
         draw.ellipse((px1, py1, px2, py2), fill=(134, 197, 218))
-        draw.text((cx - 5, cy - 18), "Artificial horizon", (0,0,0), font=font)
+
+
+        # Remove text that says artificial horizon 
+        #draw.text((cx - 5, cy - 18), "Artificial horizon", (0,0,0), font=font)
         draw.chord((px1, py1, px2, py2), roll_deg - pitch_deg, roll_deg + pitch_deg + 180, fill=(0,190,0))
         draw.line((px1, cy, cx + r, cy), fill=(0, 0, 0), width=1)
         
