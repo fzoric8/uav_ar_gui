@@ -1,8 +1,8 @@
 <launch>
-<arg name="frequency" value="40"/> 
+<arg name="frequency" value="25"/> 
 <arg name="use_mmuav_simulation" value="false"/>
-<arg name="config_name" value="bebop.yml"/>
-<arg name="gui_config" value="bebop_gui.yml"/>
+<arg name="config_name" value="epfl_config.yml"/>
+<arg name="gui_config" value="epfl_gui.yml"/>
 <arg name="use_hpe" default="false"/>
 
 <group if="$(arg use_mmuav_simulation)">

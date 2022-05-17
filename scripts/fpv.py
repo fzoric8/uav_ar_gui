@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/python3
 import rospy
 import sys
 import yaml
@@ -58,7 +58,7 @@ class fpvGUI():
         self.pil_img = None
 
         # Use proper image (Compressed for rPi) --> faster
-        self.use_normal_image = True
+        self.use_normal_image = False
         self.use_compressed_image = not self.use_normal_image
 
         self._init_subscribers(); self._init_publishers(); 
@@ -214,6 +214,8 @@ class fpvGUI():
         # Draw linear velocity and height
         fontsize = 32
         font = ImageFont.truetype(self.font_path, fontsize, encoding="unic")
+        # Convert to RGB to mitigate stupid errors related to colorspaces
+        pil_img = pil_img.convert("RGB")
         draw = ImageDraw.Draw(pil_img)
 
         draw.text((height_px, height_py), "altitude: " + str(self.height) + " m", (0, 255, 0), font=font)

@@ -1,0 +1,5 @@
+topics:
+    odm_sub: "/drone_1/mavros/odometry/out"
+    cam_sub: "/camera/image_raw"
+    cam_compressed_sub: "/camera/image_raw/compressed"
+    ui_pub: "/uav/gui"
