@@ -62,6 +62,12 @@ class fpvGUI():
         self.cam_img = None
         self.pil_img = None
 
+        rospy.loginfo("gui dimensions: ({0},{1})".format(self.gui_cfg["width"], self.gui_cfg["height"]))
+
+        # AR Image 
+        self.gui_width  = int(self.gui_cfg["width"])
+        self.gui_height = int(self.gui_cfg["height"])
+
         # Use proper image (Compressed for rPi) --> faster
         self.use_normal_image = True
         self.use_compressed_image = not self.use_normal_image
@@ -206,8 +212,8 @@ class fpvGUI():
         ah_cy = self.gui_cfg["artificial_horizon"]["cy"]
         ah_d   = self.gui_cfg["artificial_horizon"]["d"]
 
-        height_px = self.gui_cfg["height"]["cx"]
-        height_py = self.gui_cfg["height"]["cy"]
+        height_px = self.gui_cfg["altitutde"]["cx"]
+        height_py = self.gui_cfg["altitutde"]["cy"]
 
         linear_velocity_px = self.gui_cfg["linear_velocity"]["cx"]
         linear_velocity_py = self.gui_cfg["linear_velocity"]["cy"]
@@ -269,6 +275,9 @@ class fpvGUI():
                 start_t = rospy.Time.now().to_sec()
                 
                 pil_img = self.pil_img
+                # Recieved image from stream resized
+                pil_img = pil_img.resize((self.gui_width, self.gui_height))
+
                 pil_img = self.create_fpv(pil_img, hpe_img)
 
                 duration = rospy.Time.now().to_sec() - start_t

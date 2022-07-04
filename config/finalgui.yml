@@ -1,3 +1,5 @@
+width: 1280
+height: 920
 compass:
     px: 200
     py: 50
@@ -6,7 +8,7 @@ artificial_horizon:
     px: 800
     py: 50
     d:
-height:
+altitutde:
     px: 30
     py: 440
 linear_velocity:
