@@ -8,7 +8,7 @@ import rospkg
 import numpy as np
 
 
-from PIL import Image as PILImage, ImageFont, ImageDraw
+from PIL import Image as PILImage, ImageFont, ImageDraw, ImageOps
 
 from sensor_msgs.msg import Image as ROSImage
 from sensor_msgs.msg import CompressedImage
@@ -420,22 +420,47 @@ class fpvGUI():
 
         # Added this copy to create new image for using
         hpe_img = PILImage.fromarray(target_pil_img.copy())
+        
         rospy.logdebug("Type: {}".format(type(hpe_img)))
-        hpe_img.resize((src_pil_img_h/5, src_pil_img_w/5)) 
+        # Resize hpe_image on 5 times smaller than src_pil_img
+        scale_w, scale_h = 4, 5 
+        hpe_img.resize((src_pil_img_h/scale_w, src_pil_img_w/scale_h)) 
 
-        rospy.logdebug("src_pil_img multi: {}".format(src_pil_img_h * 3 / 5))
-        rospy.logdebug("src_pil_img minus: {}".format(src_pil_img_h - hpe_img.size[1]))
+        # Crop image for some percentage
+        
+        cropped_hpe_img = crop_image(hpe_img, 0.2, 0.4)
+        #cropped_hpe_img.putalpha(50); 
 
-        src_pil_img.paste(hpe_img, box=(0, (src_pil_img_h * 3)/5))
+        # Get size of hpe_img
+        hpe_img_w_, hpe_img_h_ = cropped_hpe_img.size
+        rospy.logdebug("Hpe image size: {} - {}".format(hpe_img_w_, hpe_img_h_))
+
+        src_pil_img.paste(cropped_hpe_img, box=(0, (src_pil_img_h - hpe_img_h_)))
 
         return src_pil_img
+
+
 
 # Must be a better way to do this?!
 # https://stackoverflow.com/questions/715417/converting-from-a-string-to-boolean-in-python
 # I remember having this problem before, ask around about it!
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")
-  
+
+def crop_image(img, percentage_w, percentage_h): 
+        
+    w, h = img.size
+
+    w_crop, h_crop = w * percentage_w/2, h * percentage_h/2
+    start_w, start_h = w_crop, h_crop
+    end_w, end_h = w - w_crop, h - h_crop
+    
+
+    cropped_img = img.crop((start_w, start_h, end_w, end_h))
+
+    return cropped_img
+
+
 if __name__ == '__main__':
     try:
         p = fpvGUI(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

@@ -3,11 +3,11 @@ height: 920
 compass:
     cx: 200
     cy: 200
-    d: 300
+    d: 200
 artificial_horizon:
-    cx: 1200
+    cx: 1100
     cy: 200
-    d: 300
+    d: 200
 altitutde:
     cx: 1100
     cy: 800
