@@ -1,0 +1,7 @@
+<launch>
+
+    <arg name="frequency" value="1"/> 
+    <node pkg="uav_ar_gui" type="results.py" name="monitor_results_node" output="screen" args="$(arg frequency)"></node>
+    
+</launch>
+    

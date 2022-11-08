@@ -10,6 +10,7 @@ import numpy as np
 
 from PIL import Image as PILImage, ImageFont, ImageDraw
 
+from std_msgs.msg import String
 from sensor_msgs.msg import Image as ROSImage
 from sensor_msgs.msg import CompressedImage
 from nav_msgs.msg import Odometry
@@ -27,7 +28,7 @@ class fpvGUI():
             frequency (integer): A frequency used for sleep method to wait until next iteration
         """
         self.frequency = int(frequency)
-        rospy.init_node('uav_ar_gui', anonymous=True, log_level=rospy.DEBUG)
+        rospy.init_node('uav_ar_gui', anonymous=True, log_level=rospy.INFO)
 
         rospack = rospkg.RosPack()
         self.origin_path = rospack.get_path("uav_ar_gui")
@@ -49,6 +50,7 @@ class fpvGUI():
         # Recv flags
         self.odom_msg_recv = False
         self.img_recv = False
+        self.duration_recv = False
         self.hpe_img_recv = False
         self.compressed_img_recv = False
         
@@ -76,6 +78,8 @@ class fpvGUI():
 
         cam_sub_name = self.cfg["topics"]["cam_sub"]
         self.cam_sub = rospy.Subscriber(cam_sub_name, numpy_msg(ROSImage), self.cam_callback, queue_size=1)
+
+        self.duration_sub = rospy.Subscriber("/duration", String, self.duration_callback, queue_size=1)
 
         if self.use_hpe: 
             hpe_zones_name = self.cfg["topics"]["hpe_zone_sub"]
@@ -163,6 +167,11 @@ class fpvGUI():
             self.hpe_img = np.frombuffer(image.data, dtype=np.uint8).reshape(
                 image.height, image.width, 3)
 
+    def duration_callback(self, msg): 
+        
+        self.duration_recv = True
+        self.duration = msg.data
+
     def get_rotation(self, msg):
         """Function that returns the rotation of the drone in the yaw direction
 
@@ -214,6 +223,7 @@ class fpvGUI():
         # Draw linear velocity and height
         fontsize = 32
         font = ImageFont.truetype(self.font_path, fontsize, encoding="unic")
+        font_ = ImageFont.truetype(self.font_path, 56, encoding="unic")
         draw = ImageDraw.Draw(pil_img)
 
         draw.text((height_px, height_py), "altitude: " + str(self.height) + " m", (0, 255, 0), font=font)
@@ -223,6 +233,8 @@ class fpvGUI():
         rospy.logdebug("Linear velocity py: {}".format(lin_vel_py))
 
         draw.text((lin_vel_px, lin_vel_py), "velocity: " + str(self.linear_velocity) + " m/s", (0, 255, 0), font=font)
+        if self.duration_recv:
+            draw.text(((50, 950)), "t: {}".format(self.duration), (0, 255, 0), font=font_)
         
         # Draw compass
         pil_img = fpvGUI.draw_compass_on_image(pil_img, comp_cx, comp_cy, comp_d, yaw_deg, font)
